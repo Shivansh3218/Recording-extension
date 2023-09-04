@@ -147,6 +147,21 @@ tr:not(:last-child) td {
   font-size: large;
   font: bold;
 }
+#meeting-recording-container{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+
+#recordings-list{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+}
+ul, li{
+  list-style: none;
+}
 
 @keyframes spin {
   0% { transform: rotate(0deg); }

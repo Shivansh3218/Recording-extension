@@ -17,10 +17,17 @@ let isMuted;
 let stream = null;
 let audio = null;
 let mixedStream = null;
- chunks = [];
+chunks = [];
 let recorder = null;
 let isRecordingVideo = false;
 const previewUrl = chrome.runtime.getURL("preview.html");
+
+const dbName = "recordingsDatabase";
+const dbVersion = 1;
+let db;
+let mediaRecorder;
+let recordedChunks = [];
+const openRequest = indexedDB.open(dbName, dbVersion);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "stopRecording") {
@@ -60,73 +67,26 @@ function unmuteAudio() {
   }
 }
 
-
-// Function to initialize the array and store it in chrome.storage.local
-
-  const initialChunksArray = [];
-  
-  // Save the initial array to chrome.storage.local
-  chrome.storage.local.set({ chunks: initialChunksArray }, () => {
-    if (chrome.runtime.lastError) {
-      console.error('Error initializing chunks array:', chrome.runtime.lastError);
-    } else {
-      console.log('Chunks array initialized:', initialChunksArray);
-    }
-  });
-
-
-
-function pushToChunksArray(item) {
-  // Retrieve the current array from chrome.storage.local
-  chrome.storage.local.get('chunks', (result) => {
-    if (chrome.runtime.lastError) {
-      console.error('Error retrieving chunks array:', chrome.runtime.lastError);
-    } else {
-      const currentChunksArray = result.chunks || [];
-      currentChunksArray.push(item);
-      
-      // Save the updated array back to chrome.storage.local
-      chrome.storage.local.set({ chunks: currentChunksArray }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('Error updating chunks array:', chrome.runtime.lastError);
-        } else {
-          console.log('Item pushed to chunks array:', item);
-        }
-      });
-    }
-  });
+openRequest.onsuccess = async function (event) {
+  db = event.target.result;
 }
 
+openRequest.onupgradeneeded = function (event) {
+  db = event.target.result;
 
+  if (!db.objectStoreNames.contains("recordings")) {
+    const recordingStore = db.createObjectStore("recordings", {
+      keyPath: "id",
+      autoIncrement: true,
+    });
+    recordingStore.createIndex("name", "name", { unique: false });
+    recordingStore.createIndex("time", "time", { unique: false });
+  }
+};
 
 
 function handleDataAvailable(e) {
-  // console.log(chunks);
-  if (e.data) {
-    chunks.push(e.data);
-    const blobToBase64 = (blob) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-          const base64Strings = reader.result
-            .toString()
-            .replace(/^data:(.*,)?/, "");
-          resolve(base64Strings);
-        };
-        reader.onerror = (error) => reject(error);
-      });
-    };
-
-    blobToBase64(e.data)
-      .then((base64Strings) => {
-        pushToChunksArray(base64Strings);
-      
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  }
+  recordedChunks.push(e.data);
 }
 
 function shareScreen() {
@@ -193,6 +153,8 @@ function shareScreen() {
     });
 }
 
+
+
 function onCombinedStreamAvailable(stream) {
   localStream = stream;
   if (localStream != null) {
@@ -232,7 +194,37 @@ function onCombinedStreamAvailable(stream) {
 }
 
 async function stopRecording() {
-  // stop timer for video duration calculation:-
+  const transaction = db.transaction("recordings", "readwrite");
+  const recordingStore = transaction.objectStore("recordings");
+  const blob = new Blob(recordedChunks, { type: "video/webm" });
+  recordedChunks = [];
+  let date = new Date();
+  const timestamp = new Date(date).toLocaleTimeString() // Get current timestamp
+
+  const recording = {
+    name: "Recording " + timestamp,
+    data: blob
+  };
+
+  const addRequest = recordingStore.add({ recording });
+  addRequest.onsuccess = function () {
+    console.log("Recording added to the database");
+    chrome.windows.getCurrent({ populate: true }, function (currentWindow) {
+      const currentTab = currentWindow.tabs.find(tab => tab.active);
+      if (currentTab) {
+        const currentTabId = currentTab.id;
+        console.log('Current tab ID:', currentTabId);
+        
+       chrome.runtime.sendMessage({ action: "closePopup", tabId: currentTabId });
+      } else {
+        console.error('Unable to get the current tab information.');
+      }
+    });
+  };
+
+  addRequest.onerror = function () {
+    console.error("Error adding recording to the database");
+  };
   try {
     if (recorder.state !== "inactive") {
       recorder.stop();
@@ -242,9 +234,12 @@ async function stopRecording() {
 
     window.onbeforeunload = null;
 
-    chrome.runtime.sendMessage({ action: "createTab", url: previewUrl });
+    // chrome.runtime.sendMessage({ action: "createTab", url: previewUrl });
   } catch (error) {
     console.log(error);
   }
 }
+openRequest.onerror = function (event) {
+  console.error("Error opening database", event.target.error);
+};
 
