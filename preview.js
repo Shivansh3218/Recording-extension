@@ -251,6 +251,23 @@ function displayRecordings() {
 
   const cursor = recordingStore.openCursor();
 
+
+  function deleteRecording(id) {
+    const transaction = db.transaction("recordings", "readwrite");
+    const recordingStore = transaction.objectStore("recordings");
+
+    const deleteRequest = recordingStore.delete(id);
+    console.log("delete request", id)
+
+    deleteRequest.onsuccess = function () {
+      console.log(`Recording ${id} deleted successfully.`);
+      location.reload();
+    };
+
+    deleteRequest.onerror = function () {
+      console.error(`Error deleting recording ${id}`);
+    };
+  }
   cursor.onsuccess = function (event) {
     const cursor = event.target.result;
     if (cursor) {
@@ -266,6 +283,9 @@ function displayRecordings() {
       deleteButton.classList.add("delete");
       deleteButton.textContent = "Delete";
       deleteButton.id = cursor.value.id;
+      deleteButton.addEventListener("click", function () {
+        deleteRecording(cursor.key);
+      });
 
       recordingContainer.appendChild(deleteButton);
       Listener(recordingLink.id);
@@ -316,73 +336,18 @@ function Listener(btnId) {
     })
   }
 
-  let delarr = Array.from(document.getElementsByClassName("delete"));
-  // console.log(delarr, "delete array");
-  for (let i = 0; i < delarr.length; i++) {
-    // console.log(arr[i],"button");
-    delarr[i].addEventListener("click", () => {
-      deleteRecording(delarr[i].id)
-    })
-  }
+  // let delarr = Array.from(document.getElementsByClassName("delete"));
+  // // console.log(delarr, "delete array");
+  // for (let i = 0; i < delarr.length; i++) {
+  //   // console.log(arr[i],"button");
+  //   delarr[i].addEventListener("click", () => {
+  //     deleteRecording(delarr[i].id)
+  //   })
+  // }
 }
 
 
 
-
-
-
-function deleteRecording(nameToDelete) {
-  const transaction = db.transaction(["recordings"], "readwrite");
-  const objectStore = transaction.objectStore("recordings");
-
-  console.log(nameToDelete,objectStore, "name to delete");
-
-  const deleteRequest = objectStore.delete(nameToDelete);
-
-  // Handle the delete request success.
-  deleteRequest.onsuccess = () => {
-    console.log(`Video '${nameToDelete}' deleted successfully.`);
-    // console.log(objectStore, "delete request result");
-  };
-
-  // Handle errors.
-  deleteRequest.onerror = (event) => {
-    console.error(`Error deleting video: ${event.target.error}`);
-  };
-
-
-  // transaction.oncomplete = function () {
-  //   db.close();
-  // };
-  // Open a cursor on the object store
-  // const cursorRequest = objectStore.openCursor();
-
-  // cursorRequest.onsuccess = function (event) {
-  //   const cursor = event.target.result;
-    
-
-  //   if (cursor) {
-      
-  // console.log(cursor.value, "cursor request")
-  //     // Check if the current cursor record matches the criteria
-  //     if (cursor.value.id === keyToDelete) {
-  //       // Delete the record associated with the cursor
-  //       cursor.delete();
-  //       console.log("Video deleted successfully");
-  //     }
-
-  //     // Continue iterating through the cursor
-  //     cursor.continue();
-  //   }
-  // };
-
-  // cursorRequest.onerror = function (event) {
-  //   console.error("Cursor error: " + event.target.errorCode);
-  // };
-
-
-
-}
 
 
 

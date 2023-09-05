@@ -79,8 +79,8 @@ openRequest.onupgradeneeded = function (event) {
       keyPath: "id",
       autoIncrement: true,
     });
-    recordingStore.createIndex("name", "name", { unique: false });
-    recordingStore.createIndex("time", "time", { unique: false });
+    // recordingStore.createIndex("name", "name", { unique: false });
+    // recordingStore.createIndex("time", "time", { unique: false });
   }
 };
 
@@ -242,4 +242,3 @@ async function stopRecording() {
 openRequest.onerror = function (event) {
   console.error("Error opening database", event.target.error);
 };
-
