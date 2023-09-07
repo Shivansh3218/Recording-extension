@@ -215,7 +215,7 @@ async function stopRecording() {
         const currentTabId = currentTab.id;
         console.log('Current tab ID:', currentTabId);
         
-       chrome.runtime.sendMessage({ action: "closePopup", tabId: currentTabId });
+       chrome.runtime.sendMessage({ action: "closePopupWindow", tabId: currentTabId });
       } else {
         console.error('Unable to get the current tab information.');
       }

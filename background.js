@@ -19,6 +19,13 @@ function openPopup() {
       },
       function (window) {
         popUpId = window.id; // Store the ID of the newly opened popup
+        chrome.storage.local.set({ popUpId }, () => {
+          if (chrome.runtime.lastError) {
+            console.error(chrome.runtime.lastError);
+          } else {
+            console.log("stored in local storage")
+          }
+        });
         isPopUpOpened = true;
       }
     );
@@ -65,6 +72,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "popupId") {
     // Access the popup's window object
     popUpId = request.message;
+    chrome.storage.local.set({ popUpId }, () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+      } else {
+        console.log("stored in local storage")
+      }
+    });
   }
   if (request.action === "getContentTabId") {
     meetWindowId = sender.tab.id;
@@ -81,21 +95,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   }
   if (request.action === "stopRecording") {
-    setTimeout(() => {
-      if (doesWindowExist(popUpId)) {
-        try {
-          chrome.windows.remove(popUpId, function () {
-            if (chrome.runtime.lastError) {
-              console.log(chrome.runtime.lastError, "errorr in removing window")
-            }
-          })
+    // setTimeout(() => {
+    //   if (doesWindowExist(popUpId)) {
+    //     try {
+    //       chrome.windows.remove(popUpId, function () {
+    //         if (chrome.runtime.lastError) {
+    //           console.log(chrome.runtime.lastError, "errorr in removing window")
+    //         }
+    //       })
 
-        } catch (err) {
-          console.log(err)
-        }
+    //     } catch (err) {
+    //       console.log(err)
+    //     }
 
-      }
-    }, 4000);
+    //   }
+    // }, 4000);
 
   }
   if (request.message === "closePreview") {
@@ -118,6 +132,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       );
     } catch (er) { }
+  }
+
+  if (request.action === "closePopupWindow") {
+    chrome.storage.local.get('popUpId', (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error retrieving chunks array:', chrome.runtime.lastError);
+      } else {
+        popUpId = result.popUpId;
+        if (doesWindowExist(popUpId)) {
+          try {
+            chrome.windows.remove(popUpId, function () {
+              if (chrome.runtime.lastError) {
+                console.log(chrome.runtime.lastError, "errorr in removing window")
+              }
+            })
+  
+          } catch (err) {
+            console.log(err)
+          }
+  
+        }
+      }
+    })
+  
   }
   if (request.action === "createTab") {
     chrome.tabs.create({ url: request.url });
@@ -171,4 +209,12 @@ chrome.runtime.onConnect.addListener(function (externalPort) {
 
 
 
-
+// setInterval(() => {
+//   chrome.storage.local.get('popUpId', (result) => {
+//         if (chrome.runtime.lastError) {
+//           console.error('Error retrieving chunks array:', chrome.runtime.lastError);
+//         } else {
+//           console.log('Chunks array:', result);
+//         }
+//       })
+// }, 1000);

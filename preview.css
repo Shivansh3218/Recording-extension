@@ -162,6 +162,52 @@ tr:not(:last-child) td {
 ul, li{
   list-style: none;
 }
+.individual-recording-container{
+  display: flex;
+  gap: 1rem;
+
+}
+#preview-container{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem ;
+  align-items: center;
+}
+
+.btn-play{
+  padding: 10px;
+  font-size: medium;
+  border: 2px solid;
+  cursor: pointer;
+  width: 15rem;
+  border-radius: 10px;
+  background-color: #549454;
+  color: white;
+}
+
+.delete{
+  padding: 10px;
+  font-size: medium;
+  width: 15rem;
+  border: 2px solid;
+  cursor: pointer;
+  border-radius: 10px;
+  background-color: #be370b;
+  color: white;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @keyframes spin {
   0% { transform: rotate(0deg); }

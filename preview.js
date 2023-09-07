@@ -1,6 +1,5 @@
 let loadingScreen = document.querySelector("#loading-screen");
 let buttonsContainer = document.querySelector(".buttons");
-let downloadButton = document.querySelector("#download-recording");
 
 // let resultArr = [];
 // let totalSize = 1000;
@@ -225,8 +224,7 @@ let db;
 
 const request = indexedDB.open(dbName, dbVersion);
 
-const video = document.getElementById("video-tag");
-
+let recordedVideo = document.querySelector("#recorded-video");
 request.onupgradeneeded = event => {
   db = event.target.result;
   const objectStore = db.createObjectStore("recordings", { keyPath: "id", autoIncrement: true });
@@ -268,26 +266,33 @@ function displayRecordings() {
       console.error(`Error deleting recording ${id}`);
     };
   }
+
+
   cursor.onsuccess = function (event) {
     const cursor = event.target.result;
     if (cursor) {
       const recordingLink = document.createElement("button");
       let recordingContainer = document.querySelector("#recordings-list");
+      let individualRecordingContainer = document.createElement("div");
+
+      individualRecordingContainer.classList.add("individual-recording-container");
+      recordingContainer.appendChild(individualRecordingContainer);
+
       recordingLink.classList.add("btn-play");
       recordingLink.id = URL.createObjectURL(cursor.value.recording.data);
-      console.log(cursor.value.id, "recording link");
+      console.log(cursor, "recording link");
       recordingLink.textContent = `${cursor.value.recording.name}`;
-      recordingContainer.appendChild(recordingLink);
+      individualRecordingContainer.appendChild(recordingLink);
       // Create a button to delete the recording
       const deleteButton = document.createElement("button");
       deleteButton.classList.add("delete");
-      deleteButton.textContent = "Delete";
+      deleteButton.textContent = "Delete Rec";
       deleteButton.id = cursor.value.id;
       deleteButton.addEventListener("click", function () {
-        deleteRecording(cursor.key);
+        deleteRecording(parseInt(deleteButton.id));
       });
 
-      recordingContainer.appendChild(deleteButton);
+      individualRecordingContainer.appendChild(deleteButton);
       Listener(recordingLink.id);
       cursor.continue();
     }
@@ -326,29 +331,30 @@ function displayRecordingById(id) {
 }
 
 function Listener(btnId) {
-  // console.log(btnId, "button id inside function")
   let arr = Array.from(document.getElementsByClassName("btn-play"));
-  // console.log(arr, "button array");
   for (let i = 0; i < arr.length; i++) {
-    // console.log(arr[i],"button");
     arr[i].addEventListener("click", () => {
       handleClick(arr[i].id)
     })
   }
-
-  // let delarr = Array.from(document.getElementsByClassName("delete"));
-  // // console.log(delarr, "delete array");
-  // for (let i = 0; i < delarr.length; i++) {
-  //   // console.log(arr[i],"button");
-  //   delarr[i].addEventListener("click", () => {
-  //     deleteRecording(delarr[i].id)
-  //   })
-  // }
 }
 
+let downloadButton = document.querySelector("#download-recording");
 
+downloadButton.addEventListener("click", () => {
+  // Create a download link
+  const downloadLink = document.createElement("a");
+  downloadLink.href = recordedVideo.src;
+  downloadLink.download = "video.mp4";
+  document.body.appendChild(downloadLink);
 
+  // Trigger download
+  downloadLink.click();
 
+  // Clean up
+  resultArr = [];
+  downloadLink.remove();
+});
 
 
 
@@ -396,23 +402,13 @@ function LoadFirstVideo() {
         cursor.continue();
 
       } else {
-
-        console.log(recordingsArray[recordingsArray.length - 1], "recordings array");
-        const video = document.createElement("video");
-        video.id = "recordedVideo";
-        video.controls = true;
-        video.width = 500;
-        video.height = 300;
-        let videoContainer = document.querySelector("#meeting-recording-container");
-        console.log(videoContainer)
-        videoContainer.appendChild(video);
-        video.src = URL.createObjectURL(recordingsArray[recordingsArray.length - 1]);
+        const recordedVideo = document.querySelector("#recorded-video");
+        recordedVideo.width = 500;
+        recordedVideo.height = 300;
+        recordedVideo.src = URL.createObjectURL(recordingsArray[recordingsArray.length - 1]);
 
       }
     }
-
-
-
   };
 }
 
