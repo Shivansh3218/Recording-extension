@@ -1,5 +1,3 @@
-// window.onload = () => {
-// };
 
 setTimeout(() => {
   chrome.runtime.sendMessage({ action: "getContentTabId" });
@@ -295,7 +293,7 @@ async function stopVideoRecording() {
   videoRecordingEnabled = false;
   stop();
 
-  chrome.runtime.sendMessage({ action: "stopRecording" });
+  chrome.runtime.sendMessage({ action: "stopRecording", method:"manually" });
 
 
   let data = {
@@ -309,18 +307,24 @@ async function stopVideoRecording() {
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message.action === "startRecordingTimer") {
     duration = 0;
-if(openPreviewPageInterval==undefined){
-    openPreviewPageInterval = setInterval(() => {
-      let endButton = document.querySelector(".Gt6sbf");
-      console.log(endButton, "endbutton")
-      if (endButton == null) {
-        console.log("endbutton is null", openPreviewPageInterval)
+    if (openPreviewPageInterval == undefined) {
+      openPreviewPageInterval = setInterval(() => {
+        let endButton = document.querySelector(".Gt6sbf");
+        console.log(endButton, videoRecordingEnabled, "endbutton")
         
-        window.clearInterval(openPreviewPageInterval)
-        chrome.runtime.sendMessage({ action: "createTab", url:previewUrl });
-      }
-    }, 1000)
-  }
+        if (endButton == null) {
+          
+          window.clearInterval(openPreviewPageInterval)
+          console.log("endbutton is null", openPreviewPageInterval)
+          if (videoRecordingEnabled == true) {
+            chrome.runtime.sendMessage({ action: "stopRecording", method:"automatically" });
+          chrome.runtime.sendMessage({ action: "createTabAfterDelay", url: previewUrl });
+          }else{
+            chrome.runtime.sendMessage({ action: "createTab", url: previewUrl });
+          }
+        }
+      }, 1000)
+    }
     videoRecordingEnabled = true;
     clearInterval(intervalId);
     meetTimeBtn.innerText = "00:00:00";

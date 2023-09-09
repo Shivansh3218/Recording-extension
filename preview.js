@@ -405,7 +405,12 @@ function LoadFirstVideo() {
         const recordedVideo = document.querySelector("#recorded-video");
         recordedVideo.width = 500;
         recordedVideo.height = 300;
-        recordedVideo.src = URL.createObjectURL(recordingsArray[recordingsArray.length - 1]);
+        try {
+          recordedVideo.src = URL.createObjectURL(recordingsArray[recordingsArray.length - 1]);
+        } catch (error) {
+         console.log(error)
+        }
+        // recordedVideo.src = URL.createObjectURL(recordingsArray[recordingsArray.length - 1]);
 
       }
     }

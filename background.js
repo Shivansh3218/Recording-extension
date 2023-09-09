@@ -82,17 +82,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request.action === "getContentTabId") {
     meetWindowId = sender.tab.id;
+    chrome.storage.local.set({ meetWindowId }, () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+      } else {
+        console.log(" meet  window id stored in local storage")
+      }
+    });
   }
   if (request.action === "dummyMessage") {
     console.log(request.data)
   }
 
   if (request.action === "startingRecording") {
-    try {
-      chrome.tabs.sendMessage(meetWindowId, { action: "startRecordingTimer" });
-    } catch (err) {
-      console.log(err);
-    }
+    chrome.storage.local.get('meetWindowId', (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error retrieving chunks array:', chrome.runtime.lastError);
+      } else {
+        meetWindowId = result.meetWindowId;
+
+        try {
+          chrome.tabs.sendMessage(meetWindowId, { action: "startRecordingTimer" });
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    })
+
   }
   if (request.action === "stopRecording") {
     // setTimeout(() => {
@@ -147,33 +163,70 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log(chrome.runtime.lastError, "errorr in removing window")
               }
             })
-  
+
           } catch (err) {
             console.log(err)
           }
-  
+
         }
       }
     })
-  
+
   }
   if (request.action === "createTab") {
     chrome.tabs.create({ url: request.url });
+    chrome.storage.local.get('popUpId', (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error retrieving chunks array:', chrome.runtime.lastError);
+      } else {
+        popUpId = result.popUpId;
+        if (doesWindowExist(popUpId)) {
+          try {
+            chrome.windows.remove(popUpId, function () {
+              if (chrome.runtime.lastError) {
+                console.log(chrome.runtime.lastError, "errorr in removing window")
+              }
+            })
 
-    if (doesWindowExist(popUpId)) {
-      try {
-        chrome.windows.remove(popUpId, function () {
-          if (chrome.runtime.lastError) {
-            // console.log(chrome.runtime.lastError);
+          } catch (err) {
+            console.log(err)
           }
-        })
 
-      } catch (err) {
-        console.log(err)
+        }
       }
+    })
+  }
 
-    }
-  } else if (request.type === "attendance") {
+  if (request.action === "createTabAfterDelay") {
+    setTimeout(() => {
+
+      chrome.tabs.create({ url: request.url });
+      chrome.storage.local.get('popUpId', (result) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error retrieving chunks array:', chrome.runtime.lastError);
+        } else {
+          popUpId = result.popUpId;
+          if (doesWindowExist(popUpId)) {
+            try {
+              chrome.windows.remove(popUpId, function () {
+                if (chrome.runtime.lastError) {
+                  console.log(chrome.runtime.lastError, "errorr in removing window")
+                }
+              })
+
+            } catch (err) {
+              console.log(err)
+            }
+
+          }
+        }
+      })
+    }, 4000)
+
+
+  }
+
+  else if (request.type === "attendance") {
     let attendanceRecord = request.meetRecord;
     chrome.storage.local.set({ attendanceRecord }, () => {
       if (chrome.runtime.lastError) {
@@ -188,16 +241,26 @@ let connect = 0;
 chrome.runtime.onConnect.addListener(function (externalPort) {
   externalPort.onDisconnect.addListener(function () {
     console.log(meetWindowId, "meet window id on disconnect");
-    if (doesWindowExist(meetWindowId) === true) {
-      try {
-        chrome.tabs.sendMessage(meetWindowId, { message: "PopupClosed" });
-      } catch (err) {
-        console.log(err);
-      }
-    }
 
-    isPopUpOpened = false;
+    chrome.storage.local.get('meetWindowId', (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error retrieving chunks array:', chrome.runtime.lastError);
+      } else {
+        meetWindowId = result.meetWindowId;
+
+        if (doesWindowExist(meetWindowId) === true) {
+          try {
+            chrome.tabs.sendMessage(meetWindowId, { message: "PopupClosed" });
+          } catch (err) {
+            console.log(err);
+          }
+        }
+
+        isPopUpOpened = false;
+      }
+    });
   });
+
 });
 
 

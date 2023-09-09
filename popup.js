@@ -30,8 +30,11 @@ let recordedChunks = [];
 const openRequest = indexedDB.open(dbName, dbVersion);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "stopRecording") {
-    stopRecording();
+  if (request.action === "stopRecording" && request.method == "manually") {
+    stopRecording(method = "manually");
+  }
+  else if (request.action === "stopRecording" && request.method == "automatically") {
+    stopRecording(method = "automatically");
   }
 
   if (request.action === "start-Recording") {
@@ -209,35 +212,39 @@ async function stopRecording() {
   const addRequest = recordingStore.add({ recording });
   addRequest.onsuccess = function () {
     console.log("Recording added to the database");
-    chrome.windows.getCurrent({ populate: true }, function (currentWindow) {
-      const currentTab = currentWindow.tabs.find(tab => tab.active);
-      if (currentTab) {
-        const currentTabId = currentTab.id;
-        console.log('Current tab ID:', currentTabId);
-        
-       chrome.runtime.sendMessage({ action: "closePopupWindow", tabId: currentTabId });
-      } else {
-        console.error('Unable to get the current tab information.');
+    console.log("recording-method ", method);
+    if (method == "manually") {
+      try {
+        setTimeout(() => {
+          chrome.runtime.sendMessage({ action: "closePopupWindow" });
+        }, 1000);
+
+      } catch (error) {
+
       }
-    });
-  };
 
-  addRequest.onerror = function () {
-    console.error("Error adding recording to the database");
-  };
-  try {
-    if (recorder.state !== "inactive") {
-      recorder.stop();
+
     }
-    isRecordingVideo = false;
-    stop();
-
-    window.onbeforeunload = null;
-
-    // chrome.runtime.sendMessage({ action: "createTab", url: previewUrl });
-  } catch (error) {
-    console.log(error);
   }
+
+
+addRequest.onerror = function () {
+  console.error("Error adding recording to the database");
+};
+try {
+  if (recorder.state !== "inactive") {
+    recorder.stop();
+  }
+  isRecordingVideo = false;
+  stop();
+
+  window.onbeforeunload = null;
+
+
+} catch (error) {
+  console.log(error);
+}
+
 }
 openRequest.onerror = function (event) {
   console.error("Error opening database", event.target.error);
